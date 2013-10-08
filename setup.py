@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 bigsky
 =================
@@ -25,15 +26,19 @@ setup(
         'bigsky/outputs/to_googlemap',
         'bigsky/outputs/simpledb_import',
         'bigsky/outputs/simpledb_output',
+        'bigsky/outputs/s3_to_sqs',
         'bigsky/outputs/s3_import',
-        'bigsky/outputs/exiv2',
+        'bigsky/outputs/exiv2',      
+        'bigsky/processing/outside',
+        'bigsky/processing/__init__',
+        'bigsky/processing/foliage_detection',
         ],
     packages=['bigsky',],
     zip_safe=True,
     license='MIT',
     include_package_data=True,
     classifiers=[],
-    scripts=['scripts/bigsky_spider', 'scripts/bigsky_exif', 'scripts/bigsky_html', 'scripts/bigsky_simpledb_import', 'scripts/bigsky_s3_import', 'scripts/bigsky_simpledb_output', 'scripts/bigsky_exiv2'],
+    scripts=['scripts/bigsky_spider', 'scripts/bigsky_exif', 'scripts/bigsky_html', 'scripts/bigsky_simpledb_import', 'scripts/bigsky_s3_import', 'scripts/bigsky_simpledb_output', 'scripts/bigsky_exiv2', 'scripts/bigsky_s3_to_sqs', 'scripts/bigsky_outside_only', 'scripts/bigsky_foliage_detection'],
     install_requires=[
         'python-gflags',
         'boto>=2.13.0',
