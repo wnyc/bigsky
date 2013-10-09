@@ -20,6 +20,8 @@ gflags.DEFINE_integer('limit', 1000000, 'Maximum number of photos to fetch')
 gflags.DEFINE_integer('year', None, 'Year')
 gflags.DEFINE_integer('month', None, 'Month')
 gflags.DEFINE_integer('day', None, 'Day')
+gflags.DEFINE_integer('hour', None, 'Hour')
+gflags.DEFINE_integer('minute', None, 'Minute')
 gflags.DEFINE_string('region', 'us-west-1', 'AWS region to connect to')
 gflags.DEFINE_float('delay', 1, 'Seconds to wait between API calls.  Note there is a 3,600 query per hour limit, so going faster will just earn you a status 420 enhance your calm message.')
 
@@ -29,26 +31,27 @@ def get_photos():
     
     all_flags = (FLAGS.south, FLAGS.west, FLAGS.north, FLAGS.east)
     kwargs = dict(
-                  per_page=500,   # Limit for geocoded stuff
                   )
                   
                   
     if all(all_flags):
         kwargs['bbox'] = '%0.4f, %0.4f, %0.4f, %0.4f' % all_flags
         
-    kwargs['min_taken_date'] = int(datetime.datetime(year=FLAGS.year, month=FLAGS.month, day=FLAGS.day, hour=11, minute=0, second=0).strftime('%s'))
-    kwargs['max_taken_date'] = int(datetime.datetime(year=FLAGS.year, month=FLAGS.month, day=FLAGS.day, hour=14, minute=0, second=0).strftime('%s'))
-    x = 0
+    kwargs['min_taken_date'] = int(datetime.datetime(year=FLAGS.year, month=FLAGS.month, day=FLAGS.day, hour=8, minute=0, second=0).strftime('%s'))
+    kwargs['max_taken_date'] = int(datetime.datetime(year=FLAGS.year, month=FLAGS.month, day=FLAGS.day, hour=17, minute=0, second=0).strftime('%s'))
+    x = 1
+    count = 0
     while True:
-        print kwargs
         kwargs['page'] = str(x)
+        print kwargs
         x += 1 
         photos = list(GET_PHOTOS_DISPATCHER[FLAGS.source](**kwargs))
         if not photos:
             break
+        count += len(photos)
         for photo in photos:
             yield photo
-
+    print count
 
 def main(argv=None, stdin=None, stdout=None, stderr=None):
     import sys

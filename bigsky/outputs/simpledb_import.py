@@ -40,7 +40,6 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     while incomings:
         for incoming in incomings:
             message = json.loads(incoming.get_body())
-            print message
             domain.put_attributes(message['id'], message)
             for target in targets:
                 target.write(incoming)

@@ -21,28 +21,29 @@ def build():
 def install():
     run('rm -rf dist')
     run('mkdir dist')
-    sudo('apt-get install -y build-essential python-dev exiv2 python-imaging')
-    sudo('pip install --upgrade pil')
+    sudo('apt-get install -y build-essential python-dev exiv2 python-imaging libjpeg-dev python-setuptools python-pip imagemagick libjpeg-turbo-progs')
     put('dist/*', 'dist')
     sudo('easy_install ~/dist/*.gz')
     
 
-
 def simpledb_output():
     run('bigsky_simpledb_output')
 
-def import_originals():
-    run('&'.join(["bigsky_s3_import --url=url_o --targets=exif --source=download_originals --bucket=wnyc.org-foliage-orig"]*5))
+def simpledb_import():
+    run('&'.join(['bigsky_simpledb_import'] * 5))
+
+#def import_originals():
+#    run('&'.join(["bigsky_s3_import --url=url_o --targets=exif --source=download_originals --bucket=wnyc.org-foliage-orig"]*5))
 
 def import_thumbs():
     run('&'.join(["bigsky_s3_import --url=url_t --source=download_thumbnails --bucket=wnyc.org-foliage-thumbs"]*5))
 
 def exiv2():
-    run('&'.join(["bigsky_exiv2 --source=exif --targets=foliage-lightmeter --bucket_in=wnyc.org-foliage-orig --bucket_out=wnyc.org-foliage-exif"]*5))
+    run('&'.join(["bigsky_exiv2 --source=download_originals --targets=foliage-lightmeter --bucket_out=wnyc.org-foliage-exif"]*3))
 
 def find_outside():
     run("&".join(["bigsky_outside_only --source=foliage-lightmeter --targets=foliage-outdoors --bucket=wnyc.org-foliage-exif"] * 5 ))
 
 def detect_foliage():
-    run("&".join(["bigsky_foliage_detection --source=foliage-outdoors --targets=foliage-outdoors2 --targets=foliage-detected --bucket=wnyc.org-foliage-thumbs"] * 2))
+    run("while true;do bigsky_foliage_detection --source=foliage-outdoors --targets=foliage-outdoors2 --targets=foliage-detected --bucket=wnyc.org-foliage-thumbs;done ")
 

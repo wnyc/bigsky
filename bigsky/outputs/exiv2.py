@@ -19,7 +19,6 @@ gflags.DEFINE_multistring('targets', [], 'Select SQS queue target')
 gflags.DEFINE_boolean('delete', False, 'Remove items from queue when done processing?')
 gflags.DEFINE_string('region', 'us-west-1', 'AWS region to connect to')
 gflags.DEFINE_string('bucket_region', Location.USWest, 'AWS region to create S3 bucket')
-gflags.DEFINE_string('bucket_in', None, 'Bucket name')
 gflags.DEFINE_string('bucket_out', None, 'Bucket name')
 
 def main(argv=None, stdin=None, stdout=None, stderr=None):
@@ -42,7 +41,7 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     sqs = boto.sqs.connect_to_region(FLAGS.region)
     q = sqs.create_queue(FLAGS.source)
     targets = map(sqs.create_queue, FLAGS.targets)
-    bucket = s3.get_bucket(FLAGS.bucket_in)
+
     bucket_out = s3.get_bucket(FLAGS.bucket_out)
 
     incomings = q.get_messages()
@@ -53,7 +52,10 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
             try:
                 fn = mktemp()
                 print "fetching", message['id']
-                bucket.get_key(message['id']).get_contents_to_filename(fn)
+                if 'url_o' not in message:
+                    q.delete_message(incoming)
+                    continue 
+                open(fn, "w+").write(urllib2.urlopen(message['url_o']).read())
                 k = Key(bucket_out)
                 k.key = message['id']
                 data = commands.getoutput('exiv2 -pt ' + fn)

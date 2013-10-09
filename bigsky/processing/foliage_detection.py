@@ -1,7 +1,11 @@
 import Image
 from StringIO import StringIO 
+import os
+from tempfile import mktemp 
+import tempfile 
 import sys 
 import boto
+import commands
 import boto.sdb
 import boto.sqs
 import boto.s3
@@ -34,18 +38,10 @@ def extract_hue(v):
         return None
     
     hue, l, s = rgb_to_hls(*[x / 256.0 for x in v])
-    hue *= 360
-
-    
-    if 0 < hue <= 140 or hue>=330:
-        if s > 0.6:
-            return 'foliage'
-        else:
-            return 'other'
-    if hue < 190:
-        return 'green'
-    return 'other' 
-
+    if s < 0.3:
+        return None
+    hue = (((int(hue * 360) - 355) % 360)/10)*10
+    return hue 
 
     
 
@@ -76,20 +72,28 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     messages = q.get_messages()
     while messages:
         for incoming in messages:
-            message = json.loads(incoming.get_body())
-            image = Image.open(StringIO(bucket.get_key(message['id']).get_contents_as_string()))
-            image = image.resize((64,64))
-            x, y = image.size
-            size = float(x * y)
-            histogram = compute_histogram(map(extract_hue, image.getdata()))
-            item = domain.get_item(message['id'])
-            item['foliage'] = histogram.get('foliage', 0) / size
-            item['green'] = histogram.get('green', 0) / size
-            item['other'] = histogram.get('other', 0) / size
-            item.save()
-            for target in targets:
-                target.write(incoming)
-            q.delete_message(incoming)
+            fn = None
+            try:
+                message = json.loads(incoming.get_body())
+                fn = mktemp()
+                bucket.get_key(message['id']).get_contents_to_filename(fn)
+                image = Image.open(StringIO(commands.getoutput('djpeg ' + fn)))
+                image = image.resize((64,64))
+                x, y = image.size
+                size = float(x * y)
+                histogram = compute_histogram(map(extract_hue, image.getdata()))
+                print histogram
+                item = domain.get_item(message['id'])
+                for hue, count in histogram.items():
+                    if hue is None: continue 
+                    hue = "hue-%03d" % hue
+                    item[hue] = count / size
+                item.save()
+                for target in targets:
+                    target.write(incoming)
+                q.delete_message(incoming)
+            finally:
+                if fn and os.path.exists(fn): os.unlink(fn)
         messages = q.get_messages()
 
 
