@@ -40,7 +40,8 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
         bucket = s3.create_bucket(FLAGS.bucket, location=FLAGS.bucket_region)
     except boto.exception.S3CreateError:
         bucket = s3.get_bucket(FLAGS.bucket)
-
+    visited = set(int(k.key) for k in bucket.list())
+    
     sqs = boto.sqs.connect_to_region(FLAGS.region)
     q = sqs.create_queue(FLAGS.source)
     targets = map(sqs.create_queue, FLAGS.targets)
@@ -49,17 +50,20 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     while incomings:
         for incoming in incomings:
             message = json.loads(incoming.get_body())
-            if FLAGS.url not in message:
-                print "Skipping ", message
-                q.delete_message(incoming)
-                continue
-                
-            print "Downloading", message[FLAGS.url]
-            data = urllib2.urlopen(message[FLAGS.url]).read()
-            k = Key(bucket)
-            k.key = str(message['id'])
-            print "Saving", message['id'], len(data), message[FLAGS.url]
-            k.set_contents_from_string(data)
+            if int(message['id']) in visited:
+                print "Skipping", message
+            else:
+                if FLAGS.url not in message:
+                    print "Skipping ", message
+                    q.delete_message(incoming)
+                    continue
+
+                print "Downloading", message[FLAGS.url]
+                data = urllib2.urlopen(message[FLAGS.url]).read()
+                k = Key(bucket)
+                k.key = str(message['id'])
+                print "Saving", message['id'], len(data), message[FLAGS.url]
+                k.set_contents_from_string(data)
             for target in targets:
                 target.write(incoming)
             q.delete_message(incoming)

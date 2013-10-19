@@ -72,6 +72,8 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     output = []
     for photo in get_photos():
         print photo
+        if 'datetaken' in photo:
+            photo['daytaken'] = photo['datetaken'].split()[0]
         m = Message()
         m.set_body(json.dumps(photo))
         q.write(m)

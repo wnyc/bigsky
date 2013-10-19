@@ -43,6 +43,7 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     targets = map(sqs.create_queue, FLAGS.targets)
 
     bucket_out = s3.get_bucket(FLAGS.bucket_out)
+    visited = set(int(k.key) for k in bucket_out.list())
 
     incomings = q.get_messages()
     while incomings:
@@ -52,14 +53,20 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
             try:
                 fn = mktemp()
                 print "fetching", message['id']
-                if 'url_o' not in message:
-                    q.delete_message(incoming)
-                    continue 
-                open(fn, "w+").write(urllib2.urlopen(message['url_o']).read())
-                k = Key(bucket_out)
-                k.key = message['id']
-                data = commands.getoutput('exiv2 -pt ' + fn)
-                k.set_contents_from_string(data)
+                if int(message['id']) in visited:
+                    print "skipping"
+                else:
+                    if 'url_o' not in message:
+                        q.delete_message(incoming)
+                        continue 
+                    try:
+                        open(fn, "w+").write(urllib2.urlopen(message['url_o']).read())
+                    except:
+                        continue 
+                    k = Key(bucket_out)
+                    k.key = message['id']
+                    data = commands.getoutput('exiv2 -pt ' + fn)
+                    k.set_contents_from_string(data)
             finally:
                 if fn:
                     if os.path.exists(fn):

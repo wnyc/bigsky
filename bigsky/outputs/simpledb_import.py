@@ -40,7 +40,10 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     while incomings:
         for incoming in incomings:
             message = json.loads(incoming.get_body())
-            domain.put_attributes(message['id'], message)
+            try:
+                domain.put_attributes(message['id'], message)
+            except:
+                continue
             for target in targets:
                 target.write(incoming)
             q.delete_message(incoming)

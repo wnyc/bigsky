@@ -1,5 +1,6 @@
 import boto
 import boto.sqs
+import boto.sdb
 import boto.s3
 import json
 import gflags
@@ -15,33 +16,7 @@ gflags.RegisterValidator('bucket', lambda x:x is not None, 'You must specify a b
 gflags.DEFINE_string('domain', None, 'Domain')
 gflags.DEFINE_float('threshold', 5.0, 'Brightness threshold for outdoors')
 
-def compute_light_level(stuff):
-    needs = {'Exif.Photo.ISOSpeedRatings': None,
-             'Exif.Photo.FNumber': None,
-             'Exif.Photo.ExposureTime': None,}
-    stuff = stuff.split('\n')
-    for row in stuff:
-        try:
-            field, stuff = row.split(None, 1)
-        except ValueError:
-            return None
-        if field in needs:
-            needs[field] = stuff
-    if None in needs.values():
-        return None
-    try:
-        f = float(needs['Exif.Photo.FNumber'].split()[-1].replace('F',''))
-        iso = float(needs['Exif.Photo.ISOSpeedRatings'].split()[-1])
-        shutter = Fraction(needs['Exif.Photo.ExposureTime'].split()[-2])
-    except:
-        return None
-    try:
-        level = float(f*f / (iso * shutter))
-    except ZeroDivisionError:
-        return None
 
-    print level
-    return level
 
 def main(argv=None, stdin=None, stdout=None, stderr=None):
     import sys
@@ -68,19 +43,29 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
 
     q = sqs.get_queue(FLAGS.source)
     messages = q.get_messages()
+    batch = {}
+    delete = []
     while messages:
         for incoming in messages:
             message = json.loads(incoming.get_body())
-            
-            level = compute_light_level(bucket.get_key(message['id']).get_contents_as_string())
-            if level is not None and level >= FLAGS.threshold:
-                if domain:
-                    domain.put_attributes(row['id'], {'outside':'true'})
-
-                for target in targets:
-                    target.write(incoming)
-            q.delete_message(incoming)
+            print message['id']
+            batch[message['id']] = {'outside':'true'}
+            delete.append(incoming)
+            if len(batch) >= 25:
+                domain.batch_put_attributes(batch)
+                for deleted in delete:
+                    for target in targets:
+                        target.write(deleted)
+                    q.delete_message(deleted)
+                batch = {}
+                delete = []
         messages = q.get_messages()
+    if batch:
+        domain.batch_put_attributes(batch)
+    for deleted in delete:
+        for target in targets:
+            target.write(deleted)
+        q.delete_message(deleted)
 
 
     return 0

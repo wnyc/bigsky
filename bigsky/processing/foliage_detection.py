@@ -92,6 +92,8 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
                 for target in targets:
                     target.write(incoming)
                 q.delete_message(incoming)
+            except IOError:
+                print "Error with ", message['id']
             finally:
                 if fn and os.path.exists(fn): os.unlink(fn)
         messages = q.get_messages()
