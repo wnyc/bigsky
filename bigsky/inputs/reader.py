@@ -28,7 +28,7 @@ gflags.DEFINE_float('delay', 1, 'Seconds to wait between API calls.  Note there 
 
 GET_PHOTOS_DISPATCHER = dict(flickr=flickr.get_photos)
 def get_photos():
-    
+    visited = set()
     all_flags = (FLAGS.south, FLAGS.west, FLAGS.north, FLAGS.east)
     kwargs = dict(
                   )
@@ -46,10 +46,12 @@ def get_photos():
         print kwargs
         x += 1 
         photos = list(GET_PHOTOS_DISPATCHER[FLAGS.source](**kwargs))
+        photos = [photo for photo in photos if int(photo['id']) not in visited]
         if not photos:
             break
         count += len(photos)
         for photo in photos:
+            visited.add(int(photo['id']))
             yield photo
     print count
 

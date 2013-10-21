@@ -33,7 +33,10 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     targets = map(sqs.create_queue, FLAGS.targets)
     simpledb = boto.sdb.connect_to_region(FLAGS.region)
     domain = simpledb.create_domain(FLAGS.domain)
-    for row in domain.select('select * from `' + FLAGS.domain + '`'):
+    extras = ''
+    if argv:
+        extras = ' where daytaken="%s"' % argv[0]
+    for row in domain.select('select * from `' + FLAGS.domain + '`' + extras):
         print row
         m = Message()
         m.set_body(json.dumps(row))

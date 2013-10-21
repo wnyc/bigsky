@@ -1,3 +1,4 @@
+import urllib2
 import Image
 from StringIO import StringIO 
 import os
@@ -76,9 +77,13 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
             try:
                 message = json.loads(incoming.get_body())
                 fn = mktemp()
-                bucket.get_key(message['id']).get_contents_to_filename(fn)
-                image = Image.open(StringIO(commands.getoutput('djpeg ' + fn)))
-                image = image.resize((64,64))
+                try:
+                    bucket.get_key(message['id']).get_contents_to_filename(fn)
+                    data = commands.getoutput('djpeg  ' + fn )
+                    image = Image.open(StringIO(data))
+                    image = image.resize((64,64))
+                except IOError:
+                    continue 
                 x, y = image.size
                 size = float(x * y)
                 histogram = compute_histogram(map(extract_hue, image.getdata()))
@@ -92,8 +97,7 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
                 for target in targets:
                     target.write(incoming)
                 q.delete_message(incoming)
-            except IOError:
-                print "Error with ", message['id']
+                print "Success with ", message['id']
             finally:
                 if fn and os.path.exists(fn): os.unlink(fn)
         messages = q.get_messages()

@@ -24,13 +24,14 @@ def install():
     sudo('apt-get install -y build-essential python-dev exiv2 python-imaging libjpeg-dev python-setuptools python-pip imagemagick libjpeg-turbo-progs')
     put('dist/*', 'dist')
     sudo('easy_install ~/dist/*.gz')
+    # sudo('pip install --upgrade --force pil')
     
 
 def simpledb_output():
     run('bigsky_simpledb_output')
 
 def simpledb_import():
-    run('&'.join(['bigsky_simpledb_import'] * 5))
+    run('&'.join([' bigsky_simpledb_import --source=foliage> /dev/null '] * 5))
 
 #def import_originals():
 #    run('&'.join(["bigsky_s3_import --url=url_o --targets=exif --source=download_originals --bucket=wnyc.org-foliage-orig"]*5))
@@ -47,3 +48,15 @@ def find_outside():
 def detect_foliage():
     run("while true;do bigsky_foliage_detection --source=foliage-outdoors --targets=foliage-outdoors2 --targets=foliage-detected --bucket=wnyc.org-foliage-thumbs;done ")
 
+def mark_database_with_outsides():
+    run("bigsky_mark_known_outside --source=foliage-outdoors2 --targets=foliage-outdoors3 --domain=foliage")
+
+def find_closest_hex():
+    run("bigsky_find_closest_hex --source=foliage-outdoors3 --targets=foliage-outdoors4 --domain=foliage")
+
+def instagram():
+    sudo("bigsky_slurp_instagram --target=foliage-instagram 0.0.0.0:80")
+
+
+def generate(date):
+    run("bigsky_to_googlemap " + date)

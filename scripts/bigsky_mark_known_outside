@@ -1,0 +1,6 @@
+#!/usr/bin/python
+
+from bigsky.processing.mark_known_outside import main
+import sys
+
+sys.exit(main())

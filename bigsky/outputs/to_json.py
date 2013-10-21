@@ -16,7 +16,6 @@ FLAGS = gflags.FLAGS
 
 gflags.DEFINE_string('domain', 'foliage', 'Domain')
 gflags.DEFINE_boolean('delete', False, 'Remove items from queue when done processing?')
-gflags.DEFINE_integer('limit', 1000, 'Maximum number of photos to fetch')
 gflags.DEFINE_string('region', 'us-west-1', 'AWS region to connect to')
 gflags.DEFINE_string('target', 'wnyc.org-foliage-public', 'S3 target')
 
@@ -42,7 +41,7 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     data = []
     by_date = {argv[0]:data}
 
-    query = 'select * from `' + FLAGS.domain + "` where outside is not null and  datetaken like '" + argv[0] + "%'"
+    query = 'select * from `' + FLAGS.domain + "` where outside is not null and  treehue is not null and datetaken like '" + argv[0] + "%'"
     for message in domain.select(query):
         if 'outside' not in message:
             continue 
@@ -74,9 +73,7 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
             
             avg = v / c
             avg *= 10
-            datum['green'] = sum(greens)
-            datum['yellows'] = sum(yellows)
-            datum['avghue'] = avg
+            datum['avghue'] = int(message['treehue'])
             datum['hex'] = message['hexagon']
             datum['color'] = '#%02x%02x%02x' % hsv_to_rgb(avg / 36.0, 0.5, 0.8)
             if yellows > 0.2 or greens > 0.2:
