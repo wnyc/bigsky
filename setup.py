@@ -52,6 +52,7 @@ setup(
              'scripts/bigsky_simpledb_import', 
              'scripts/bigsky_s3_import', 
              'scripts/bigsky_simpledb_output',
+             'scripts/bigsky_to_json',
              'scripts/bigsky_to_googlemap',
              'scripts/bigsky_exiv2', 
              'scripts/bigsky_dump_json', 
