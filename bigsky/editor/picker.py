@@ -101,7 +101,7 @@ class Application(tk.Frame):
 
     def has_tree(self, event):
         print event.x, event.y 
-        ratio = 40
+        ratio = 16
         pixel = self.dataimage.resize( [s/ratio for s in self.dataimage.size], Image.ANTIALIAS ).getpixel((event.x/ratio, event.y/ratio))
         pixel = [p / 256.0 for p in pixel]
         print pixel

@@ -37,7 +37,6 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
     simpledb = boto.sdb.connect_to_region(FLAGS.region)
     domain = simpledb.create_domain(FLAGS.domain)
 
-
     data = []
     by_date = {argv[0]:data}
 

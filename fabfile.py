@@ -37,7 +37,7 @@ def simpledb_import():
 #    run('&'.join(["bigsky_s3_import --url=url_o --targets=exif --source=download_originals --bucket=wnyc.org-foliage-orig"]*5))
 
 def import_thumbs():
-    run('&'.join(["bigsky_s3_import --url=url_t --source=download_thumbnails --bucket=wnyc.org-foliage-thumbs"]*5))
+    run('&'.join(["bigsky_s3_import --url=url_t --source=download_thumbnails --bucket=wnyc.org-foliage-thumbs"]*3))
 
 def exiv2():
     run('&'.join(["bigsky_exiv2 --source=download_originals --targets=foliage-lightmeter --bucket_out=wnyc.org-foliage-exif"]*3))
@@ -46,7 +46,7 @@ def find_outside():
     run("&".join(["bigsky_outside_only --source=foliage-lightmeter --targets=foliage-outdoors --bucket=wnyc.org-foliage-exif"] * 5 ))
 
 def detect_foliage():
-    run("while true;do bigsky_foliage_detection --source=foliage-outdoors --targets=foliage-outdoors2 --targets=foliage-detected --bucket=wnyc.org-foliage-thumbs;done ")
+    run("while true;do bigsky_foliage_detection --source=foliage-outdoors --targets=foliage-outdoors2 --targets=foliage-detected --bucket=wnyc.org-foliage-thumbs;done")
 
 def mark_database_with_outsides():
     run("bigsky_mark_known_outside --source=foliage-outdoors2 --targets=foliage-outdoors3 --domain=foliage")

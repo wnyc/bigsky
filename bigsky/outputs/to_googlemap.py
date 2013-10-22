@@ -1,4 +1,6 @@
 import boto
+import boto.sdb
+from colorsys import rgb_to_hsv
 
 from boto.sqs.connection import SQSConnection
 from boto.sqs.message import Message
@@ -12,10 +14,11 @@ FLAGS = gflags.FLAGS
 
 
 gflags.DEFINE_string('source', None, 'Select SQS queue source')
-gflags.DEFINE_boolean('delete', False, 'Remove items from queue when done processing?')
-gflags.DEFINE_integer('limit', 1000, 'Maximum number of photos to fetch')
 gflags.DEFINE_string('region', 'us-west-1', 'AWS region to connect to')
+gflags.DEFINE_string('domain', 'foliage', 'Domain')
 
+def color(hue):
+    return rgb_to_hsv(hue / 360.0, 1.0, 1.0)
 
 
 def main(argv=None, stdin=None, stdout=None, stderr=None):
@@ -31,8 +34,6 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
         stderr.write("%s\\nUsage: %s update_id_addresses\\n%s\n" %
                      (e, sys.argv[0], FLAGS))
         return 1
-    conn = boto.sqs.connect_to_region(FLAGS.region)
-    q = conn.create_queue(FLAGS.source)
 
     print """
 <!DOCTYPE html>
@@ -57,25 +58,37 @@ def main(argv=None, stdin=None, stdout=None, stderr=None):
         var map = new google.maps.Map(document.getElementById("map-canvas"),
             mapOptions);
 """
-    
-    for x in range(FLAGS.limit):
-        for incoming in q.get_messages():
-            message = json.loads(incoming.get_body())
-            try:
-                message['latitude'] = float(message['latitude'])
-                message['longitude'] = float(message['longitude'])
-                if message['latitude'] == 0 and message['longitude'] == 0:
-                    print "Opps"
-                    continue 
+    sdb = boto.sdb.connect_to_region(FLAGS.region)
+    domain = sdb.create_domain(FLAGS.domain)
 
-                print   """
-new google.maps.Marker({
+    query = 'select * from `' + FLAGS.domain + "` where  tree is not null and datetaken like '" + argv[0] + "%'"
+    for message in domain.select(query):
+        try:
+            if not message.get('tree') or not message.get('url_z'):
+                continue 
+            message['latitude'] = float(message['latitude'])
+            message['longitude'] = float(message['longitude'])
+            message['avghue'] = int(message['treehue'])
+            if message['latitude'] == 0 and message['longitude'] == 0:
+                continue 
+
+            print   """
+marker = new google.maps.Marker({
         position: new google.maps.LatLng(%(latitude)f, %(longitude)f),
         map: map,
-      });""" % message
-            except:
-                pass
+        url:"%(url_z)s",
+        icon:new google.maps.MarkerImage("%(avghue)d.png"),
+        flat:true,
+        optimized:false, 
+      });
 
+google.maps.event.addListener(marker, 'click', function() {
+    window.location.href = this.url;
+});
+
+""" % message
+        finally:
+            pass
     print """
   }
       google.maps.event.addDomListener(window, 'load', initialize);
